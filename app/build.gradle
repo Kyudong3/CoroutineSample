@@ -42,6 +42,14 @@ dependencies {
     implementation deps.core_ktx
     implementation deps.appcompat
     implementation deps.constraint_layout
+    implementation deps.koin.koin
+    implementation deps.koin.koin_viewmodel
+    implementation deps.viewmodel
+    implementation deps.livedata
+    implementation deps.network.retrofit
+    implementation deps.network.gson
+    implementation deps.network.okhttp3
+    implementation deps.network.okhttp3_logging
     testImplementation deps.test.junit
     androidTestImplementation deps.test.test_junit
     androidTestImplementation deps.test.espresso
