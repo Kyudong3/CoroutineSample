@@ -34,7 +34,7 @@
 - Parallel is physical word. In parallel, jobs are actually processed at the same time. Parallel is method to run multi-thread in multi core.
 - Each core that contains multiple thread runs at the same time
 
-![Concurrency](/Users/kyudong/Desktop/Concurrency.jpg)
+![](./img/Concurrency.jpg)
 
 (출처: [concurrency](https://www.codeproject.com/Articles/1267757/Concurrency-vs-Parallelism))
 
@@ -51,7 +51,6 @@
 3. **DeadLock** (교착 상태)
    - To synchronize the code in concurrency, we need to pause or block thread while other thread's job is finished
    - Complexity of this situation, circular dependencies(순환적 의존성) occurs
-
 
 
 
