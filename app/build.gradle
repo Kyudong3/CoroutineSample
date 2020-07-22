@@ -50,6 +50,8 @@ dependencies {
     implementation deps.network.gson
     implementation deps.network.okhttp3
     implementation deps.network.okhttp3_logging
+    implementation deps.coroutines.core
+    implementation deps.coroutines.android
     testImplementation deps.test.junit
     androidTestImplementation deps.test.test_junit
     androidTestImplementation deps.test.espresso
