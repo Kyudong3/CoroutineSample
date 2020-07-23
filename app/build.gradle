@@ -42,6 +42,7 @@ dependencies {
     implementation deps.core_ktx
     implementation deps.appcompat
     implementation deps.constraint_layout
+    implementation deps.recyclerview
     implementation deps.koin.koin
     implementation deps.koin.koin_viewmodel
     implementation deps.viewmodel
