@@ -1,7 +1,13 @@
 package com.example.coroutinesample
 
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.coroutinesample.adapter.ArticleAdapter
+import com.example.coroutinesample.model.Article
+import com.example.coroutinesample.model.Feed
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import org.w3c.dom.Element
@@ -13,23 +19,32 @@ class MainActivity : AppCompatActivity() {
     private val poolDispatcher = newFixedThreadPoolContext(2, "IO")
     private val factory = DocumentBuilderFactory.newInstance()
 
-    private lateinit var feeds: List<String>
+    private lateinit var feeds: List<Feed>
+
+    private lateinit var viewAdapter: ArticleAdapter
+    private lateinit var viewManager: RecyclerView.LayoutManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-//        GlobalScope.launch(dispatcher) {
-//            loadNews()
-//        }
-
         feeds = listOf(
-            "https://www.npr.org/rss/rss.php?id=1001",
-            "http://rss.cnn.com/rss/cnn_topstories.rss",
-            "http://feeds.foxnews.com/foxnews/politics?format=xml",
-            "htt:myNewsFeed"
+            Feed("npr", "https://www.npr.org/rss/rss.php?id=1001"),
+            Feed("cnn", "http://rss.cnn.com/rss/cnn_topstories.rss"),
+            Feed("fox", "http://feeds.foxnews.com/foxnews/politics?format=xml"),
+            Feed("inv", "htt:myNewsFeed")
         )
 
+        initRecyclerView()
         asyncLoadNews()
+    }
+
+    private fun initRecyclerView() {
+        viewManager = LinearLayoutManager(this)
+        viewAdapter = ArticleAdapter()
+        articlesRv.apply {
+            layoutManager = viewManager
+            adapter = viewAdapter
+        }
     }
 
     /* 비동기 호출자로 감싼 동기 함수 */
@@ -41,24 +56,22 @@ class MainActivity : AppCompatActivity() {
 //        }
         val headlines = fetchRssHeadlines()
         GlobalScope.launch(Dispatchers.Main) {
-            newsCount.text = "Found ${headlines.size} News"
+            //newsCount.text = "Found ${headlines.size} News"
         }
     }
 
-    /* 미리 정의된 Dispatcher를 갖는 비동기 함수
-    *  함수는 스레드와 상관없이 launch() 블록이 없는 상태로 호출될 수 있고, Job을 반환해서 호출자가 취소 가능 */
+    /* 함수는 스레드와 상관없이 launch() 블록이 없는 상태로 호출될 수 있고, Job을 반환해서 호출자가 취소 가능 */
     private fun asyncLoadNews() = GlobalScope.launch {
-        val requests = mutableListOf<Deferred<List<String>>>()
+        val requests = mutableListOf<Deferred<List<Article>>>()
         feeds.mapTo(requests) {
-            fetchHeadlinesAsync(it, poolDispatcher)
+            fetchArticlesAsync(it, poolDispatcher)
         }
 
         requests.forEach {
-            //it.await()
             it.join()
         }
 
-        val headlines = requests
+        val articles = requests
             .filter { !it.isCancelled }
             .flatMap { it.getCompleted() }
 
@@ -69,11 +82,8 @@ class MainActivity : AppCompatActivity() {
         val obtained = requests.size - failed
 
         launch(Dispatchers.Main) {
-            newsCount.text = "Found ${headlines.size} News " + "in ${requests.size} feeds"
-
-            if (failed > 0) {
-                warnings.text = "Failed to fetch $failed feeds"
-            }
+            progressBar.visibility = View.GONE
+            viewAdapter.add(articles)
         }
     }
 
@@ -91,12 +101,13 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    private fun fetchHeadlinesAsync(
-        feed: String,
+    private fun fetchArticlesAsync(
+        feed: Feed,
         dispatcher: CoroutineDispatcher
     ) = GlobalScope.async(dispatcher) {
+        delay(1000)
         val builder = factory.newDocumentBuilder()
-        val xml = builder.parse(feed)
+        val xml = builder.parse(feed.url)
         val news = xml.getElementsByTagName("channel").item(0)
         (0 until news.childNodes.length)
             .map { news.childNodes.item(it) }
@@ -104,7 +115,13 @@ class MainActivity : AppCompatActivity() {
             .map { it as Element }
             .filter { "item" == it.tagName }
             .map {
-                it.getElementsByTagName("title").item(0).textContent
+                val title = it.getElementsByTagName("title").item(0).textContent
+                var summary = it.getElementsByTagName("description").item(0).textContent
+                if (!summary.startsWith("<div")
+                    && summary.contains("<div")) {
+                    summary = summary.substring(0, summary.indexOf("<div"))
+                }
+                Article(feed.name, title, summary)
             }
     }
 }
